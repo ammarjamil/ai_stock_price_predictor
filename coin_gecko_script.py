@@ -87,6 +87,7 @@ class CoinGeckoAPIScraper:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json',
             'Accept-Language': 'en-US,en;q=0.9'
+
         })
         
         # Configure session
@@ -243,7 +244,12 @@ class CoinGeckoAPIScraper:
                 'days': config['days'],
                 'interval': config['interval']
             }
-            
+            # self.session.headers.update({
+            # 'x-cg-demo-api-key': os.getenv("COINGEKO_API_KEY", "")
+
+            #  })
+            print(f"header of historical data {self.session.headers}")
+
             response = self.session.get(url, params=params, timeout=15)
             response.raise_for_status()
             
