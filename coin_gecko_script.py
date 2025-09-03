@@ -49,8 +49,6 @@ class LLMService:
     def analyze_coin(self, coin_data: str) -> dict:
         """Analyze news using Groq LLM"""
         try:
-            print("conin data analyza coin")
-            print(coin_data)
             # prompt = self.create_analysis_prompt(headline, content, symbol)
             formatted_prompt = self.prompt_template.format(coin_data=coin_data)
 
@@ -534,8 +532,6 @@ Examples:
             print(json.dumps(data, indent=2, default=str))
         else:
             final_data= print_formatted_output(data)
-            print("final data")
-            print(final_data)
             llm_service.analyze_coin(final_data)
            
         
