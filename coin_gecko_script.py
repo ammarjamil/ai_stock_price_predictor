@@ -2,18 +2,17 @@
 """
 CoinGecko API Cryptocurrency Data Scraper
 
-A Python script that fetches cryptocurrency data from CoinGecko API.
+A Python script that fetches cryptocurrency data from CoinGecko API using pycoingecko.
 Supports fetching current prices, market data, and historical price charts.
 
 Requirements:
-    pip install requests pandas argparse
+    pip install pycoingecko pandas argparse python-dotenv langchain-groq
 
 Usage:
     python coingecko_scraper.py --coin bitcoin --timeframe weekly
     python coingecko_scraper.py --coin ethereum --timeframe daily --save-csv
 """
 
-import requests
 import json
 import argparse
 import pandas as pd
@@ -26,6 +25,8 @@ from template.prompt_template_new import prompt
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 import os
+from pycoingecko import CoinGeckoAPI
+
 load_dotenv()
 
 class LLMService:
@@ -47,52 +48,51 @@ class LLMService:
         )
 
     def analyze_coin(self, coin_data: str) -> dict:
-        """Analyze news using Groq LLM"""
+        """Analyze coin data using Groq LLM"""
         try:
-            # prompt = self.create_analysis_prompt(headline, content, symbol)
             formatted_prompt = self.prompt_template.format(coin_data=coin_data)
 
-            if(os.getenv("DEBUG").lower() == "true"):
+            if os.getenv("DEBUG", "").lower() == "true":
                 with open("prompt.txt", "w", encoding="utf-8") as f:
                     f.write(formatted_prompt)
+            
             response = self.llm.invoke(formatted_prompt)
 
             print(f"Received response, length: {len(response.content)} characters")
-            if(os.getenv("DEBUG").lower() == "true"):
+            if os.getenv("DEBUG", "").lower() == "true":
                 with open("response.txt", "w", encoding="utf-8") as ff:
                     ff.write(response.content)
                 
-            # # Parse JSON response
-            # response_text = json.loads(json_str)
             return True
         
-                
         except Exception as e:
             print(f"LLM analysis error: {e}")
             return False
 
 
-
 class CoinGeckoAPIScraper:
     """
-    A scraper class for fetching cryptocurrency data from CoinGecko API.
+    A scraper class for fetching cryptocurrency data from CoinGecko API using pycoingecko.
     """
     
-    def __init__(self):
-        self.base_url = "https://api.coingecko.com/api/v3"
-        self.session = requests.Session()
+    def __init__(self, api_key: Optional[str] = None):
+        """
+        Initialize the CoinGecko API client.
         
-        # Add headers to avoid rate limiting
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-US,en;q=0.9'
-
-        })
-        
-        # Configure session
-        self.session.timeout = 30
-        print("CoinGecko API Scraper initialized")
+        Args:
+            api_key: Optional CoinGecko API key for higher rate limits
+        """
+        try:
+            # Initialize pycoingecko client
+            if api_key:
+                self.cg = CoinGeckoAPI(api_key=api_key)
+                print("✓ CoinGecko API initialized with API key")
+            else:
+                self.cg = CoinGeckoAPI()
+                print("✓ CoinGecko API initialized (free tier)")
+        except Exception as e:
+            print(f"❌ Failed to initialize CoinGecko API: {e}")
+            raise
     
     def get_coin_id(self, coin_input: str) -> Optional[str]:
         """
@@ -107,49 +107,40 @@ class CoinGeckoAPIScraper:
         try:
             print(f"Looking up coin ID for: {coin_input}")
             
-            # First, try to get coins list with search
-            url = f"{self.base_url}/search"
-            params = {'query': coin_input}
-            response = self.session.get(url, params=params, timeout=10)
+            # First, try search API
+            search_results = self.cg.search(query=coin_input)
             
-            if response.status_code == 200:
-                search_data = response.json()
-                
-                # Check coins in search results
-                for coin in search_data.get('coins', []):
-                    if (coin['id'].lower() == coin_input.lower() or 
-                        coin['name'].lower() == coin_input.lower() or 
-                        coin['symbol'].lower() == coin_input.lower()):
-                        print(f"✓ Found coin ID: {coin['id']}")
-                        return coin['id']
-                
-                # If exact match not found, return first result if available
-                if search_data.get('coins'):
-                    first_match = search_data['coins'][0]
-                    print(f"✓ Using closest match: {first_match['id']} ({first_match['name']})")
-                    return first_match['id']
+            # Check coins in search results
+            for coin in search_results.get('coins', []):
+                if (coin['id'].lower() == coin_input.lower() or 
+                    coin['name'].lower() == coin_input.lower() or 
+                    coin['symbol'].lower() == coin_input.lower()):
+                    print(f"✓ Found coin ID: {coin['id']}")
+                    return coin['id']
             
-            # Fallback: try getting full coins list (rate limited approach)
+            # If exact match not found, return first result if available
+            if search_results.get('coins'):
+                first_match = search_results['coins'][0]
+                print(f"✓ Using closest match: {first_match['id']} ({first_match['name']})")
+                return first_match['id']
+            
+            # Fallback: try getting full coins list
             print("Searching in full coins list...")
-            url = f"{self.base_url}/coins/list"
-            response = self.session.get(url, timeout=15)
+            coins_list = self.cg.get_coins_list()
+            coin_input_lower = coin_input.lower()
             
-            if response.status_code == 200:
-                coins = response.json()
-                coin_input_lower = coin_input.lower()
-                
-                # Search by ID, name, or symbol
-                for coin in coins:
-                    if (coin['id'].lower() == coin_input_lower or 
-                        coin['name'].lower() == coin_input_lower or 
-                        coin['symbol'].lower() == coin_input_lower):
-                        print(f"✓ Found coin ID: {coin['id']}")
-                        return coin['id']
+            # Search by ID, name, or symbol
+            for coin in coins_list:
+                if (coin['id'].lower() == coin_input_lower or 
+                    coin['name'].lower() == coin_input_lower or 
+                    coin['symbol'].lower() == coin_input_lower):
+                    print(f"✓ Found coin ID: {coin['id']}")
+                    return coin['id']
             
             print(f"❌ Could not find coin: {coin_input}")
             return None
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             print(f"❌ Error fetching coin ID: {e}")
             return None
     
@@ -166,20 +157,17 @@ class CoinGeckoAPIScraper:
         try:
             print(f"Fetching current market data for: {coin_id}")
             
-            url = f"{self.base_url}/coins/{coin_id}"
-            params = {
-                'localization': 'false',
-                'tickers': 'false',
-                'market_data': 'true',
-                'community_data': 'false',
-                'developer_data': 'false',
-                'sparkline': 'false'
-            }
+            # Get detailed coin data
+            data = self.cg.get_coin_by_id(
+                id=coin_id,
+                localization=False,
+                tickers=False,
+                market_data=True,
+                community_data=False,
+                developer_data=False,
+                sparkline=False
+            )
             
-            response = self.session.get(url, params=params, timeout=15)
-            response.raise_for_status()
-            
-            data = response.json()
             market_data = data.get('market_data', {})
             
             # Extract data with safe navigation
@@ -193,12 +181,16 @@ class CoinGeckoAPIScraper:
                 'price_change_24h': market_data.get('price_change_percentage_24h', 0),
                 'price_change_7d': market_data.get('price_change_percentage_7d', 0),
                 'price_change_30d': market_data.get('price_change_percentage_30d', 0),
+                'price_change_1y': market_data.get('price_change_percentage_1y', 0),
                 'circulating_supply': market_data.get('circulating_supply', 0),
                 'total_supply': market_data.get('total_supply', 0),
                 'max_supply': market_data.get('max_supply', 0),
                 'ath': market_data.get('ath', {}).get('usd', 0),
+                'ath_date': market_data.get('ath_date', {}).get('usd', ''),
                 'atl': market_data.get('atl', {}).get('usd', 0),
+                'atl_date': market_data.get('atl_date', {}).get('usd', ''),
                 'market_cap_rank': data.get('market_cap_rank', 0),
+                'fully_diluted_valuation': market_data.get('fully_diluted_valuation', {}).get('usd', 0),
                 'last_updated': market_data.get('last_updated', datetime.now().isoformat())
             }
             
@@ -208,11 +200,8 @@ class CoinGeckoAPIScraper:
             
             return current_data
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             print(f"❌ Error fetching current data: {e}")
-            return None
-        except KeyError as e:
-            print(f"❌ Error parsing market data: {e}")
             return None
     
     def get_historical_data(self, coin_id: str, timeframe: str) -> List[Dict]:
@@ -233,27 +222,20 @@ class CoinGeckoAPIScraper:
             timeframe_config = {
                 'daily': {'days': 1, 'interval': 'hourly'},
                 'weekly': {'days': 7, 'interval': 'hourly'},
-                'monthly': {'days': 30, 'interval': 'daily'}
+                'monthly': {'days': 30, 'interval': 'daily'},
+                'quarterly': {'days': 90, 'interval': 'daily'},
+                'yearly': {'days': 365, 'interval': 'daily'}
             }
             
             config = timeframe_config.get(timeframe, timeframe_config['weekly'])
             
-            url = f"{self.base_url}/coins/{coin_id}/market_chart"
-            params = {
-                'vs_currency': 'usd',
-                'days': config['days'],
-                'interval': config['interval']
-            }
-            # self.session.headers.update({
-            # 'x-cg-demo-api-key': os.getenv("COINGEKO_API_KEY", "")
-
-            #  })
-            print(f"header of historical data {self.session.headers}")
-
-            response = self.session.get(url, params=params, timeout=15)
-            response.raise_for_status()
+            # Get market chart data using pycoingecko
+            data = self.cg.get_coin_market_chart_by_id(
+                id=coin_id,
+                vs_currency='usd',
+                days=config['days']
+            )
             
-            data = response.json()
             prices = data.get('prices', [])
             volumes = data.get('total_volumes', [])
             market_caps = data.get('market_caps', [])
@@ -279,50 +261,100 @@ class CoinGeckoAPIScraper:
             print(f"✓ Retrieved {len(historical_data)} historical data points")
             return historical_data
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             print(f"❌ Error fetching historical data: {e}")
             return []
-        except KeyError as e:
-            print(f"❌ Error parsing historical data: {e}")
-            return []
     
-    def get_price_alerts_data(self, coin_id: str) -> Dict:
+    def get_global_market_data(self) -> Dict:
         """
-        Get additional market data and statistics.
+        Get global cryptocurrency market statistics.
         
-        Args:
-            coin_id: CoinGecko coin ID
-            
         Returns:
-            Dictionary with additional market statistics
+            Dictionary with global market statistics
         """
         try:
-            # Get global market data
-            global_url = f"{self.base_url}/global"
-            response = self.session.get(global_url, timeout=10)
+            print("Fetching global market data...")
+            global_data = self.cg.get_global()
             
-            if response.status_code == 200:
-                global_data = response.json().get('data', {})
-                
-                return {
-                    'total_market_cap_usd': global_data.get('total_market_cap', {}).get('usd', 0),
-                    'total_volume_24h_usd': global_data.get('total_volume', {}).get('usd', 0),
-                    'bitcoin_percentage': global_data.get('market_cap_percentage', {}).get('btc', 0),
-                    'active_cryptocurrencies': global_data.get('active_cryptocurrencies', 0),
-                    'markets': global_data.get('markets', 0)
-                }
-        except:
-            pass
-        
-        return {}
+            data = global_data.get('data', {})
+            
+            return {
+                'total_market_cap_usd': data.get('total_market_cap', {}).get('usd', 0),
+                'total_volume_24h_usd': data.get('total_volume', {}).get('usd', 0),
+                'bitcoin_percentage': data.get('market_cap_percentage', {}).get('btc', 0),
+                'ethereum_percentage': data.get('market_cap_percentage', {}).get('eth', 0),
+                'active_cryptocurrencies': data.get('active_cryptocurrencies', 0),
+                'upcoming_icos': data.get('upcoming_icos', 0),
+                'ongoing_icos': data.get('ongoing_icos', 0),
+                'ended_icos': data.get('ended_icos', 0),
+                'markets': data.get('markets', 0),
+                'market_cap_change_percentage_24h': data.get('market_cap_change_percentage_24h_usd', 0)
+            }
+        except Exception as e:
+            print(f"❌ Error fetching global market data: {e}")
+            return {}
     
-    def scrape_coin_data(self, coin_input: str, timeframe: str) -> Optional[Dict]:
+    def get_trending_coins(self) -> List[Dict]:
         """
-        Main method to scrape all coin data using CoinGecko API.
+        Get currently trending coins.
+        
+        Returns:
+            List of trending coins
+        """
+        try:
+            trending_data = self.cg.get_search_trending()
+            trending_coins = []
+            
+            for coin_data in trending_data.get('coins', []):
+                coin = coin_data.get('item', {})
+                trending_coins.append({
+                    'id': coin.get('id', ''),
+                    'name': coin.get('name', ''),
+                    'symbol': coin.get('symbol', ''),
+                    'market_cap_rank': coin.get('market_cap_rank', 0),
+                    'price_btc': coin.get('price_btc', 0)
+                })
+            
+            return trending_coins[:10]  # Top 10 trending
+        except Exception as e:
+            print(f"❌ Error fetching trending coins: {e}")
+            return []
+    
+    def get_market_data_by_rank(self, limit: int = 250) -> List[Dict]:
+        """
+        Get top cryptocurrencies by market cap.
+        
+        Args:
+            limit: Number of coins to fetch (default: 250, max: 250)
+            
+        Returns:
+            List of top cryptocurrencies
+        """
+        try:
+            print(f"Fetching top {limit} cryptocurrencies by market cap...")
+            
+            market_data = self.cg.get_coins_markets(
+                vs_currency='usd',
+                order='market_cap_desc',
+                per_page=min(limit, 250),
+                page=1,
+                sparkline=False,
+                price_change_percentage='1h,24h,7d,30d,1y'
+            )
+            
+            return market_data
+        except Exception as e:
+            print(f"❌ Error fetching market data: {e}")
+            return []
+    
+    def scrape_coin_data(self, coin_input: str, timeframe: str, include_trending: bool = False) -> Optional[Dict]:
+        """
+        Main method to scrape all coin data using pycoingecko.
         
         Args:
             coin_input: Coin name or symbol
-            timeframe: 'daily', 'weekly', or 'monthly'
+            timeframe: 'daily', 'weekly', 'monthly', 'quarterly', or 'yearly'
+            include_trending: Whether to include trending coins data
             
         Returns:
             Complete coin data dictionary
@@ -347,13 +379,19 @@ class CoinGeckoAPIScraper:
         time.sleep(1)
         
         # Get historical data
-        historical_data = self.get_historical_data(coin_id, timeframe)
-        
+        # historical_data = self.get_historical_data(coin_id, timeframe)
+        historical_data=[]
         # Add small delay to respect rate limits
         time.sleep(0.5)
         
-        # Get additional market data
-        additional_data = self.get_price_alerts_data(coin_id)
+        # Get global market data
+        global_data = self.get_global_market_data()
+        
+        # Get trending coins if requested
+        trending_coins = []
+        if include_trending:
+            time.sleep(0.5)
+            trending_coins = self.get_trending_coins()
         
         # Combine all data
         result = {
@@ -361,9 +399,10 @@ class CoinGeckoAPIScraper:
             'timeframe': timeframe,
             'historical_prices': historical_data,
             'data_points': len(historical_data),
-            'global_market_data': additional_data,
+            'global_market_data': global_data,
+            'trending_coins': trending_coins,
             'scraped_at': datetime.now().isoformat(),
-            'data_source': 'CoinGecko API'
+            'data_source': 'CoinGecko API (pycoingecko)'
         }
         
         print("=" * 50)
@@ -386,11 +425,15 @@ def save_to_csv(data: Dict, filename: str):
             'Circulating Supply': data['circulating_supply'],
             'Total Supply': data['total_supply'],
             'Max Supply': data['max_supply'],
+            'Fully Diluted Valuation': data['fully_diluted_valuation'],
             '24h Change (%)': data['price_change_24h'],
             '7d Change (%)': data['price_change_7d'],
             '30d Change (%)': data['price_change_30d'],
+            '1y Change (%)': data['price_change_1y'],
             'All Time High (USD)': data['ath'],
+            'ATH Date': data['ath_date'],
             'All Time Low (USD)': data['atl'],
+            'ATL Date': data['atl_date'],
             'Timeframe': data['timeframe'],
             'Data Source': data['data_source'],
             'Last Updated': data['last_updated'],
@@ -404,7 +447,10 @@ def save_to_csv(data: Dict, filename: str):
                 'Total Crypto Market Cap (USD)': global_data.get('total_market_cap_usd', 0),
                 'Total 24h Volume (USD)': global_data.get('total_volume_24h_usd', 0),
                 'Bitcoin Dominance (%)': global_data.get('bitcoin_percentage', 0),
-                'Active Cryptocurrencies': global_data.get('active_cryptocurrencies', 0)
+                'Ethereum Dominance (%)': global_data.get('ethereum_percentage', 0),
+                'Active Cryptocurrencies': global_data.get('active_cryptocurrencies', 0),
+                'Total Markets': global_data.get('markets', 0),
+                'Market Cap Change 24h (%)': global_data.get('market_cap_change_percentage_24h', 0)
             })
         
         main_df = pd.DataFrame([main_data])
@@ -415,12 +461,19 @@ def save_to_csv(data: Dict, filename: str):
         else:
             historical_df = pd.DataFrame()
         
+        # Create trending coins DataFrame
+        trending_df = pd.DataFrame()
+        if data.get('trending_coins'):
+            trending_df = pd.DataFrame(data['trending_coins'])
+        
         # Save to Excel with multiple sheets
         excel_filename = filename.replace('.csv', '.xlsx')
         with pd.ExcelWriter(excel_filename, engine='openpyxl') as writer:
             main_df.to_excel(writer, sheet_name='Current Data', index=False)
             if not historical_df.empty:
                 historical_df.to_excel(writer, sheet_name='Historical Prices', index=False)
+            if not trending_df.empty:
+                trending_df.to_excel(writer, sheet_name='Trending Coins', index=False)
         
         # Also save main data to CSV
         csv_filename = filename if filename.endswith('.csv') else f"{filename}.csv"
@@ -446,6 +499,7 @@ def print_formatted_output(data: Dict):
     print(f"   Market Cap:           ${data['market_cap']:,}")
     print(f"   24h Trading Volume:   ${data['volume_24h']:,}")
     print(f"   Market Cap Rank:      #{data['market_cap_rank']}")
+    print(f"   Fully Diluted Val:    ${data['fully_diluted_valuation']:,}")
     
     # Supply Information
     print(f"\n🏦 SUPPLY INFORMATION:")
@@ -461,11 +515,12 @@ def print_formatted_output(data: Dict):
     print(f"   24h:                  {format_change(data['price_change_24h'])}")
     print(f"   7d:                   {format_change(data['price_change_7d'])}")
     print(f"   30d:                  {format_change(data['price_change_30d'])}")
+    print(f"   1y:                   {format_change(data['price_change_1y'])}")
     
     # All-Time Records
     print(f"\n🏆 ALL-TIME RECORDS:")
-    print(f"   All-Time High:        ${data['ath']:,.8f}")
-    print(f"   All-Time Low:         ${data['atl']:,.8f}")
+    print(f"   All-Time High:        ${data['ath']:,.8f} ({data['ath_date'][:10] if data['ath_date'] else 'N/A'})")
+    print(f"   All-Time Low:         ${data['atl']:,.8f} ({data['atl_date'][:10] if data['atl_date'] else 'N/A'})")
     
     # Global Market Data
     if data.get('global_market_data'):
@@ -474,7 +529,15 @@ def print_formatted_output(data: Dict):
         print(f"   Total Crypto Market Cap: ${global_data.get('total_market_cap_usd', 0):,}")
         print(f"   Total 24h Volume:     ${global_data.get('total_volume_24h_usd', 0):,}")
         print(f"   Bitcoin Dominance:    {global_data.get('bitcoin_percentage', 0):.2f}%")
+        print(f"   Ethereum Dominance:   {global_data.get('ethereum_percentage', 0):.2f}%")
         print(f"   Active Cryptocurrencies: {global_data.get('active_cryptocurrencies', 0):,}")
+        print(f"   Market Cap Change 24h: {format_change(global_data.get('market_cap_change_percentage_24h', 0))}")
+    
+    # Trending Coins
+    if data.get('trending_coins'):
+        print(f"\n🔥 TRENDING COINS:")
+        for i, coin in enumerate(data['trending_coins'][:5], 1):
+            print(f"   {i}. {coin['name']} ({coin['symbol'].upper()}) - Rank #{coin['market_cap_rank']}")
     
     # Metadata
     print(f"\n📋 METADATA:")
@@ -493,24 +556,25 @@ def print_formatted_output(data: Dict):
     print("="*70)
     return data
 
-llm_service = LLMService(model="openai/gpt-oss-20b")  # Using your preferred model
 
 def main():
     """Main function to run the scraper."""
     parser = argparse.ArgumentParser(
-        description='CoinGecko API Cryptocurrency Data Scraper',
+        description='CoinGecko API Cryptocurrency Data Scraper using pycoingecko',
         epilog='''
 Examples:
   python coingecko_scraper.py --coin bitcoin --timeframe weekly
   python coingecko_scraper.py --coin eth --timeframe daily --save-csv
   python coingecko_scraper.py --coin solana --timeframe monthly --json-output
+  python coingecko_scraper.py --coin bitcoin --timeframe yearly --trending
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
     parser.add_argument('--coin', '-c', required=True, 
                        help='Coin name or symbol (e.g., bitcoin, btc, ethereum, eth, solana, sol)')
-    parser.add_argument('--timeframe', '-t', choices=['daily', 'weekly', 'monthly'], 
+    parser.add_argument('--timeframe', '-t', 
+                       choices=['daily', 'weekly', 'monthly', 'quarterly', 'yearly'], 
                        default='weekly', 
                        help='Timeframe for historical data (default: weekly)')
     parser.add_argument('--save-csv', action='store_true', 
@@ -519,15 +583,28 @@ Examples:
                        help='Output raw JSON data instead of formatted display')
     parser.add_argument('--output-file', '-o', 
                        help='Custom output filename (without extension)')
+    parser.add_argument('--trending', action='store_true',
+                       help='Include trending coins data')
+    parser.add_argument('--api-key', 
+                       help='CoinGecko API key for higher rate limits')
     
     args = parser.parse_args()
     
-    # Initialize scraper
-    scraper = CoinGeckoAPIScraper()
+    # Initialize scraper with optional API key
+    api_key = args.api_key or os.getenv("COINGECKO_API_KEY")
+    scraper = CoinGeckoAPIScraper(api_key=api_key)
     
     try:
+        # Initialize LLM service
+        llm_service = None
+        if os.getenv("GROQ_API_KEY"):
+            try:
+                llm_service = LLMService(model="openai/gpt-oss-20b")
+            except Exception as e:
+                print(f"⚠️  Failed to initialize LLM service: {e}")
+        
         # Scrape data
-        data = scraper.scrape_coin_data(args.coin, args.timeframe)
+        data = scraper.scrape_coin_data(args.coin, args.timeframe, args.trending)
         
         if not data:
             print("❌ Failed to scrape coin data")
@@ -537,10 +614,13 @@ Examples:
         if args.json_output:
             print(json.dumps(data, indent=2, default=str))
         else:
-            final_data= print_formatted_output(data)
-            llm_service.analyze_coin(final_data)
+            final_data = print_formatted_output(data)
+            
+            # Run LLM analysis if available
+            if llm_service:
+                print("\n🤖 Running LLM analysis...")
+                llm_service.analyze_coin(str(final_data))
            
-        
         # Save to file if requested
         if args.save_csv:
             filename = args.output_file or f"{data['coin_id']}_{args.timeframe}_data"
