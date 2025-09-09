@@ -418,6 +418,136 @@
             line-height: 1.4;
         }
         
+        /* Key Insights Styling */
+        .key-insights-section {
+            background: #f8f9fa;
+            border-left: 4px solid #6c63ff;
+        }
+        
+        .insights-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .insight-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .insight-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .insight-item.market-context {
+            border-color: #2196f3;
+            background: linear-gradient(145deg, #f3f9ff, #ffffff);
+        }
+        
+        .insight-item.catalysts {
+            border-color: #ff9800;
+            background: linear-gradient(145deg, #fff8e1, #ffffff);
+        }
+        
+        .insight-item.scenarios {
+            border-color: #9c27b0;
+            background: linear-gradient(145deg, #f9f7ff, #ffffff);
+        }
+        
+        .insight-item h4 {
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        .insight-content {
+            font-size: 1em;
+            line-height: 1.6;
+            color: #555;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #6c63ff;
+        }
+        
+        .catalyst-list {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .catalyst-item {
+            padding: 12px 15px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        .catalyst-item:hover {
+            background: #e3f2fd;
+        }
+        
+        .scenarios-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .scenario {
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+        
+        .scenario:hover {
+            transform: translateY(-1px);
+        }
+        
+        .bull-scenario {
+            background: linear-gradient(145deg, #e8f5e8, #f0fff0);
+            border-color: #4CAF50;
+        }
+        
+        .bear-scenario {
+            background: linear-gradient(145deg, #ffeaea, #fff5f5);
+            border-color: #f44336;
+        }
+        
+        .scenario-header {
+            margin-bottom: 10px;
+        }
+        
+        .scenario-label {
+            font-weight: 700;
+            font-size: 1.1em;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        .bull-scenario .scenario-label {
+            color: #2e7d32;
+        }
+        
+        .bear-scenario .scenario-label {
+            color: #c62828;
+        }
+        
+        .scenario-content {
+            font-size: 0.95em;
+            line-height: 1.5;
+            color: #555;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -792,6 +922,60 @@
                                 <div class="zone-item support-resistance">
                                     <h4>🔴 Key Resistance</h4>
                                     <div class="zone-price">${zones.key_resistance}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Key Insights Section
+                if (analysis.key_insights) {
+                    const insights = analysis.key_insights;
+                    tradingLevelsSection += `
+                        <div class="section key-insights-section">
+                            <h2>💡 Key Market Insights</h2>
+                            <div class="insights-grid">
+                                ${insights.market_context ? `
+                                <div class="insight-item market-context">
+                                    <h4>📊 Market Context</h4>
+                                    <div class="insight-content">${insights.market_context}</div>
+                                </div>
+                                ` : ''}
+                                
+                                ${insights.price_catalysts && insights.price_catalysts.length > 0 ? `
+                                <div class="insight-item catalysts">
+                                    <h4>🚀 Price Catalysts</h4>
+                                    <div class="catalyst-list">
+                                        ${insights.price_catalysts.map(catalyst => `
+                                            <div class="catalyst-item">• ${catalyst}</div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${insights.alternative_scenarios ? `
+                                <div class="insight-item scenarios">
+                                    <h4>📈📉 Market Scenarios</h4>
+                                    <div class="scenarios-container">
+                                        ${insights.alternative_scenarios.bull_case ? `
+                                        <div class="scenario bull-scenario">
+                                            <div class="scenario-header">
+                                                <span class="scenario-label">🐂 Bull Case</span>
+                                            </div>
+                                            <div class="scenario-content">${insights.alternative_scenarios.bull_case}</div>
+                                        </div>
+                                        ` : ''}
+                                        
+                                        ${insights.alternative_scenarios.bear_case ? `
+                                        <div class="scenario bear-scenario">
+                                            <div class="scenario-header">
+                                                <span class="scenario-label">🐻 Bear Case</span>
+                                            </div>
+                                            <div class="scenario-content">${insights.alternative_scenarios.bear_case}</div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
                                 </div>
                                 ` : ''}
                             </div>
