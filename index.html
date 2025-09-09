@@ -243,6 +243,181 @@
             overflow-y: auto;
         }
         
+        /* Trading Levels Styling */
+        .trading-section {
+            background: #f0f8ff;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .stop-loss-section {
+            background: #fff5f5;
+            border-left: 4px solid #f44336;
+        }
+        
+        .trading-zones-section {
+            background: #f9f7ff;
+            border-left: 4px solid #9c27b0;
+        }
+        
+        .trading-levels {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .level-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .level-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .level-item.conservative {
+            border-color: #4CAF50;
+        }
+        
+        .level-item.moderate {
+            border-color: #ff9800;
+        }
+        
+        .level-item.aggressive {
+            border-color: #f44336;
+        }
+        
+        .level-item.stop-loss {
+            border-color: #f44336;
+            background: linear-gradient(145deg, #fff5f5, #ffffff);
+        }
+        
+        .level-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .level-label {
+            font-weight: 700;
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        .level-price {
+            font-size: 1.3em;
+            font-weight: 800;
+            color: #4CAF50;
+        }
+        
+        .stop-loss .level-price {
+            color: #f44336;
+        }
+        
+        .level-details {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .level-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .level-rationale {
+            grid-column: 1 / -1;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            font-style: italic;
+            color: #666;
+        }
+        
+        /* Trading Zones Styling */
+        .zones-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .zone-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+        
+        .zone-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .zone-item.buy-zone {
+            border-color: #4CAF50;
+            background: linear-gradient(145deg, #f0f8ff, #ffffff);
+        }
+        
+        .zone-item.buy-zone.secondary {
+            border-color: #ff9800;
+            background: linear-gradient(145deg, #fff8e1, #ffffff);
+        }
+        
+        .zone-item.support-resistance {
+            border-color: #2196f3;
+            background: linear-gradient(145deg, #f3f9ff, #ffffff);
+        }
+        
+        .zone-item h4 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        .zone-price {
+            font-size: 1.4em;
+            font-weight: 800;
+            color: #4CAF50;
+            margin-bottom: 15px;
+        }
+        
+        .zone-details {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .zone-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .zone-stat:last-of-type {
+            border-bottom: none;
+        }
+        
+        .zone-rationale {
+            grid-column: 1 / -1;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.4;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -426,12 +601,210 @@
                 });
             }
             
-            // LLM Analysis section
+            // Trading Analysis sections
+            let tradingLevelsSection = '';
             let llmSection = '';
+            
+            // If we have parsed analysis data, create structured trading sections
+            if (data.parsed_analysis) {
+                const analysis = data.parsed_analysis;
+                
+                // Take Profit Levels Section
+                if (analysis.take_profit_levels) {
+                    const tp = analysis.take_profit_levels;
+                    tradingLevelsSection += `
+                        <div class="section trading-section">
+                            <h2>🎯 Take Profit Levels</h2>
+                            <div class="trading-levels">
+                                ${tp.tp1_conservative ? `
+                                <div class="level-item conservative">
+                                    <div class="level-header">
+                                        <span class="level-label">TP1 - Conservative</span>
+                                        <span class="level-price">${tp.tp1_conservative.price}</span>
+                                    </div>
+                                    <div class="level-details">
+                                        <div class="level-stat">
+                                            <span class="stat-label">Gain:</span>
+                                            <span class="stat-value positive">${tp.tp1_conservative.percentage_gain}</span>
+                                        </div>
+                                        <div class="level-stat">
+                                            <span class="stat-label">Probability:</span>
+                                            <span class="stat-value">${tp.tp1_conservative.probability}</span>
+                                        </div>
+                                        <div class="level-stat">
+                                            <span class="stat-label">Allocation:</span>
+                                            <span class="stat-value">${tp.tp1_conservative.allocation}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${tp.tp2_moderate ? `
+                                <div class="level-item moderate">
+                                    <div class="level-header">
+                                        <span class="level-label">TP2 - Moderate</span>
+                                        <span class="level-price">${tp.tp2_moderate.price}</span>
+                                    </div>
+                                    <div class="level-details">
+                                        <div class="level-stat">
+                                            <span class="stat-label">Gain:</span>
+                                            <span class="stat-value positive">${tp.tp2_moderate.percentage_gain}</span>
+                                        </div>
+                                        <div class="level-stat">
+                                            <span class="stat-label">Probability:</span>
+                                            <span class="stat-value">${tp.tp2_moderate.probability}</span>
+                                        </div>
+                                        <div class="level-stat">
+                                            <span class="stat-label">Allocation:</span>
+                                            <span class="stat-value">${tp.tp2_moderate.allocation}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${tp.tp3_aggressive ? `
+                                <div class="level-item aggressive">
+                                    <div class="level-header">
+                                        <span class="level-label">TP3 - Aggressive</span>
+                                        <span class="level-price">${tp.tp3_aggressive.price}</span>
+                                    </div>
+                                    <div class="level-details">
+                                        <div class="level-stat">
+                                            <span class="stat-label">Gain:</span>
+                                            <span class="stat-value positive">${tp.tp3_aggressive.percentage_gain}</span>
+                                        </div>
+                                        <div class="level-stat">
+                                            <span class="stat-label">Probability:</span>
+                                            <span class="stat-value">${tp.tp3_aggressive.probability}</span>
+                                        </div>
+                                        <div class="level-stat">
+                                            <span class="stat-label">Allocation:</span>
+                                            <span class="stat-value">${tp.tp3_aggressive.allocation}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Stop Loss Section
+                if (analysis.stop_loss) {
+                    const sl = analysis.stop_loss;
+                    tradingLevelsSection += `
+                        <div class="section stop-loss-section">
+                            <h2>🛡️ Stop Loss Levels</h2>
+                            <div class="trading-levels">
+                                ${sl.conservative_sl ? `
+                                <div class="level-item stop-loss">
+                                    <div class="level-header">
+                                        <span class="level-label">Conservative Stop Loss</span>
+                                        <span class="level-price">${sl.conservative_sl.price}</span>
+                                    </div>
+                                    <div class="level-details">
+                                        <div class="level-stat">
+                                            <span class="stat-label">Max Loss:</span>
+                                            <span class="stat-value negative">${sl.conservative_sl.percentage_loss}</span>
+                                        </div>
+                                        <div class="level-rationale">
+                                            <span class="stat-label">Rationale:</span>
+                                            <span class="stat-value">${sl.conservative_sl.rationale}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${sl.moderate_sl ? `
+                                <div class="level-item stop-loss">
+                                    <div class="level-header">
+                                        <span class="level-label">Moderate Stop Loss</span>
+                                        <span class="level-price">${sl.moderate_sl.price}</span>
+                                    </div>
+                                    <div class="level-details">
+                                        <div class="level-stat">
+                                            <span class="stat-label">Max Loss:</span>
+                                            <span class="stat-value negative">${sl.moderate_sl.percentage_loss}</span>
+                                        </div>
+                                        <div class="level-rationale">
+                                            <span class="stat-label">Rationale:</span>
+                                            <span class="stat-value">${sl.moderate_sl.rationale}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Trading Zones Section
+                if (analysis.trading_zones) {
+                    const zones = analysis.trading_zones;
+                    tradingLevelsSection += `
+                        <div class="section trading-zones-section">
+                            <h2>📊 Trading Zones</h2>
+                            <div class="zones-grid">
+                                ${zones.primary_buy_zone ? `
+                                <div class="zone-item buy-zone">
+                                    <h4>🟢 Primary Buy Zone</h4>
+                                    <div class="zone-price">${zones.primary_buy_zone.price_range}</div>
+                                    <div class="zone-details">
+                                        <div class="zone-stat">
+                                            <span class="stat-label">Confidence:</span>
+                                            <span class="stat-value">${zones.primary_buy_zone.confidence}/10</span>
+                                        </div>
+                                        <div class="zone-stat">
+                                            <span class="stat-label">Risk/Reward:</span>
+                                            <span class="stat-value">${zones.primary_buy_zone.risk_reward_ratio}</span>
+                                        </div>
+                                        <div class="zone-rationale">${zones.primary_buy_zone.rationale}</div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${zones.secondary_buy_zone ? `
+                                <div class="zone-item buy-zone secondary">
+                                    <h4>🟡 Secondary Buy Zone</h4>
+                                    <div class="zone-price">${zones.secondary_buy_zone.price_range}</div>
+                                    <div class="zone-details">
+                                        <div class="zone-stat">
+                                            <span class="stat-label">Confidence:</span>
+                                            <span class="stat-value">${zones.secondary_buy_zone.confidence}/10</span>
+                                        </div>
+                                        <div class="zone-stat">
+                                            <span class="stat-label">Risk/Reward:</span>
+                                            <span class="stat-value">${zones.secondary_buy_zone.risk_reward_ratio}</span>
+                                        </div>
+                                        <div class="zone-rationale">${zones.secondary_buy_zone.rationale}</div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${zones.key_support ? `
+                                <div class="zone-item support-resistance">
+                                    <h4>🔵 Key Support</h4>
+                                    <div class="zone-price">${zones.key_support}</div>
+                                </div>
+                                ` : ''}
+                                
+                                ${zones.key_resistance ? `
+                                <div class="zone-item support-resistance">
+                                    <h4>🔴 Key Resistance</h4>
+                                    <div class="zone-price">${zones.key_resistance}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Raw LLM Analysis section (fallback)
             if (data.llm_analysis) {
                 llmSection = `
                     <div class="section analysis-section">
-                        <h2>🤖 AI Trading Analysis</h2>
+                        <h2>🤖 Raw AI Analysis</h2>
                         <div class="analysis-content">${data.llm_analysis}</div>
                     </div>
                 `;
@@ -545,6 +918,8 @@
                 </div>
                 
                 ${globalSection}
+                
+                ${tradingLevelsSection}
                 
                 ${historicalRows ? `
                 <div class="section">

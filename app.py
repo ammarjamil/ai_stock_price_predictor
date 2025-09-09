@@ -51,6 +51,7 @@ def analyze_coin():
         
         # Get LLM analysis
         llm_analysis = None
+        parsed_analysis = None
         try:
             # Capture the LLM analysis result
             if llm_service.analyze_coin(formatted_data):
@@ -59,6 +60,24 @@ def analyze_coin():
                     try:
                         with open("response.txt", "r", encoding="utf-8") as f:
                             llm_analysis = f.read()
+                            
+                        # Try to parse JSON from LLM response
+                        try:
+                            import json
+                            parsed_analysis = json.loads(llm_analysis)
+                            print("✅ Successfully parsed LLM JSON response")
+                        except json.JSONDecodeError as je:
+                            print(f"⚠️ Could not parse LLM response as JSON: {je}")
+                            # Try to extract JSON from response if it contains other text
+                            import re
+                            json_match = re.search(r'\{.*\}', llm_analysis, re.DOTALL)
+                            if json_match:
+                                try:
+                                    parsed_analysis = json.loads(json_match.group(0))
+                                    print("✅ Successfully extracted and parsed JSON from LLM response")
+                                except json.JSONDecodeError:
+                                    print("⚠️ Could not parse extracted JSON")
+                                    
                     except FileNotFoundError:
                         llm_analysis = "LLM analysis completed but response file not found."
                 else:
@@ -71,6 +90,7 @@ def analyze_coin():
         
         # Add LLM analysis to the response
         coin_data['llm_analysis'] = llm_analysis
+        coin_data['parsed_analysis'] = parsed_analysis
         
         print("✅ Analysis completed successfully")
         return jsonify(coin_data)
