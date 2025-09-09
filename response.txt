@@ -1,0 +1,94 @@
+{
+  "market_analysis": {
+    "current_trend": "Bullish",
+    "trend_confidence": "High",
+    "market_phase": "Markup",
+    "risk_level": "Medium",
+    "liquidity_assessment": "High"
+  },
+  "trading_zones": {
+    "primary_buy_zone": {
+      "price_range": "$0.235 - $0.245",
+      "confidence": "8",
+      "rationale": "Price is consolidating near the 7‑day moving average and has bounced off the 0.23 support level. Volume is steady at ~3.5B, indicating healthy liquidity. The 0.235‑0.245 range aligns with the 20‑period EMA, offering a low‑risk entry.",
+      "risk_reward_ratio": "1:2"
+    },
+    "secondary_buy_zone": {
+      "price_range": "$0.245 - $0.255",
+      "confidence": "6",
+      "rationale": "A secondary pullback within the broader uptrend could occur if the price tests the 0.245 level. This zone sits just below the 50‑period EMA and above the 0.23 support, providing a higher probability entry if the trend continues.",
+      "risk_reward_ratio": "1:1.5"
+    },
+    "primary_resistance": {
+      "price_range": "$0.260 - $0.265",
+      "confidence": "7",
+      "rationale": "The 0.26 level is the nearest significant resistance, coinciding with the 200‑period EMA and a recent swing high. A breakout above this zone would signal a strong continuation."
+    },
+    "key_support": "$0.230",
+    "key_resistance": "$0.260"
+  },
+  "take_profit_levels": {
+    "tp1_conservative": {
+      "price": "$0.265",
+      "percentage_gain": "10.4%",
+      "probability": "70%",
+      "allocation": "40% of position"
+    },
+    "tp2_moderate": {
+      "price": "$0.275",
+      "percentage_gain": "14.6%",
+      "probability": "55%",
+      "allocation": "35% of position"
+    },
+    "tp3_aggressive": {
+      "price": "$0.290",
+      "percentage_gain": "20.8%",
+      "probability": "35%",
+      "allocation": "25% of position"
+    }
+  },
+  "stop_loss": {
+    "conservative_sl": {
+      "price": "$0.225",
+      "percentage_loss": "6.3%",
+      "rationale": "Below the 0.23 support and 20‑period EMA, indicating a break of the current uptrend."
+    },
+    "moderate_sl": {
+      "price": "$0.230",
+      "percentage_loss": "4.2%",
+      "rationale": "At the key support level; protects against a short‑term pullback."
+    }
+  },
+  "technical_indicators": {
+    "rsi_14": "58 - Neutral",
+    "macd_signal": "Bullish",
+    "volume_trend": "Stable",
+    "moving_average_trend": "Bullish",
+    "support_strength": "Strong",
+    "resistance_strength": "Moderate"
+  },
+  "time_horizon": {
+    "short_term_1_7_days": "Price likely to test the 0.260 resistance; watch for a breakout or a brief pullback to 0.245.",
+    "medium_term_1_4_weeks": "If the 0.260 resistance holds, target 0.275–0.280; volume should increase to confirm the move.",
+    "long_term_1_3_months": "A sustained rally could push DOGE toward the 0.30–0.32 range, but a reversal would likely occur near the 0.230 support."
+  },
+  "position_sizing": {
+    "conservative_trader": "5% of portfolio",
+    "moderate_trader": "10% of portfolio",
+    "aggressive_trader": "15% of portfolio",
+    "maximum_risk": "Never exceed 10% of total portfolio"
+  },
+  "risk_warnings": {
+    "high_risk_factors": ["High volatility in the altcoin space", "Potential regulatory crackdowns on meme coins", "Bitcoin dominance at 56% may pull altcoins"],
+    "market_conditions_impact": "The current market is dominated by Bitcoin, which can suppress altcoin upside. However, DOGE’s strong liquidity and recent gains mitigate some risk.",
+    "volatility_alert": "Expected price swing range of ±5% within the next 7 days"
+  },
+  "key_insights": {
+    "market_context": "DOGE remains one of the top 10 cap coins with high liquidity and a strong community base. Its recent 7‑day gain of 12% indicates momentum, but Bitcoin’s dominance suggests a potential pullback if BTC rallies.",
+    "price_catalysts": ["Positive sentiment from high‑profile endorsements", "Potential listing on a major exchange or DeFi integration"],
+    "alternative_scenarios": {
+      "bull_case": "If DOGE breaks the 0.260 resistance with volume, it could rally to 0.30–0.32 within 1–2 months.",
+      "bear_case": "A failure to hold 0.260 could trigger a retreat to 0.230 or lower, with a potential 10–15% decline in the next 30 days."
+    }
+  }
+}
